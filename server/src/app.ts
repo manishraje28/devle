@@ -12,7 +12,18 @@ const app = express();
 
 // ── Security ──
 app.use(helmet());
-app.use(cors({ origin: config.corsOrigin, credentials: true }));
+
+// Allow multiple CORS origins (comma-separated in env, e.g. "http://localhost:3000,https://devle-livid.vercel.app")
+const allowedOrigins = (config.corsOrigin || '').split(',').map(o => o.trim()).filter(Boolean);
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (Postman, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
+    credentials: true,
+}));
 app.use(express.json({ limit: '10kb' }));
 
 // ── Health check ──
